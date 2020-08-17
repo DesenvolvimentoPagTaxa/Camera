@@ -50,12 +50,11 @@ class _CameraDetectState extends State<CameraDetect> {
     }
     return Scaffold(
       appBar: AppBar(
-        title: Text('Detecting...'),
+        title: Text('Detecting ...'),
       ),
       body: Column(children: [
         _camera(),
         Container(
-          height: 100,
           child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: <Widget>[
             MaterialButton(
                 child: Text("Start Scanning"),
@@ -63,7 +62,6 @@ class _CameraDetectState extends State<CameraDetect> {
                 color: Colors.blue,
                 onPressed: () async {
                   Timer.periodic(Duration(seconds: 1), (timer) {
-                    print('print every second');
                     isDetecting = false;
                   });
                   await controller.startImageStream((CameraImage StreamImage) async {
@@ -76,17 +74,17 @@ class _CameraDetectState extends State<CameraDetect> {
                       final RenderBox box = key.currentContext.findRenderObject();
                       Offset position = box.localToGlobal(Offset.zero);
                       double px = position.dx + 45;
-                      double py = position.dy;
-                      print('*******************************');
-                      print(px);
-                      print(py);
-                      print('*******************************');
+                      double py = position.dy - 50;
                       //todo teste get Location
                       setState(() {
-//                        int pixel32 = img.getPixelSafe(214, 365); //set fix position
-//                        int pixel32 = imgGreyScale.getPixelSafe(px.toInt(), py.toInt());
-                        int pixel32 = img.getPixelSafe(px.toInt(), py.toInt());
+//                        int pixel32 = imgGreyScale.getPixelSafe(px.toInt(), py.toInt()); //Image GrayScale
+                        int pixel32 = img.getPixelSafe(px.toInt(), py.toInt()); //Image Color Normal
                         int hex = abgrToArgb(pixel32);
+                        print('*******************************');
+                        print(px);
+                        print(py);
+                        print(Color(hex));
+                        print('*******************************');
                         _stateController.add(Color(hex));
                       });
                     } catch (e) {
@@ -125,7 +123,7 @@ class _CameraDetectState extends State<CameraDetect> {
                   Text('${selectedColor}', style: TextStyle(color: Colors.white, backgroundColor: Colors.black54)),
                 ],
               );
-            }),
+            })
       ]),
     );
   }
@@ -136,7 +134,6 @@ class _CameraDetectState extends State<CameraDetect> {
       return Container();
     }
     return Expanded(
-      flex: 1,
       child: Stack(
         children: <Widget>[_cameraPreviewWidget(), point(), _cameraScan()],
       ),
@@ -144,21 +141,26 @@ class _CameraDetectState extends State<CameraDetect> {
   }
 
   Widget _cameraPreviewWidget() {
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      child: AspectRatio(
-        aspectRatio: controller.value.aspectRatio,
-        child: CameraPreview(controller),
-      ),
-    );
+    final size = MediaQuery.of(context).size;
+    final deviceRatio = size.width / size.height;
+    return Stack(children: <Widget>[
+      Center(
+        child: Transform.scale(
+          scale: controller.value.aspectRatio / deviceRatio,
+          child: new AspectRatio(
+            aspectRatio: controller.value.aspectRatio,
+            child: new CameraPreview(controller),
+          ),
+        ),
+      )
+    ]);
   }
 
   Widget point() {
     return Center(
       child: Container(
         key: key,
-        height: 45,
+        height: 0,
         width: 0,
       ),
     );
@@ -180,9 +182,7 @@ class _CameraDetectState extends State<CameraDetect> {
     final int height = image.height;
     final int uvRowStride = image.planes[1].bytesPerRow;
     final int uvPixelStride = image.planes[1].bytesPerPixel;
-
     var buffer = imglib.Image(width, height);
-
     for (int x = 0; x < width; x++) {
       for (int y = 0; y < height; y++) {
         final int uvIndex = uvPixelStride * (x / 2).floor() + uvRowStride * (y / 2).floor();
