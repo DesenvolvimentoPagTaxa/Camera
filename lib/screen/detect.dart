@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
@@ -70,11 +71,12 @@ class _CameraDetectState extends State<CameraDetect> {
                     isDetecting = true;
                     try {
                       imglib.Image img = await convertYUV420toImageColor(StreamImage);
+//                      imglib.Image imgGreyScale = grayscale(img);
                       //todo teste get Location
                       final RenderBox box = key.currentContext.findRenderObject();
-                      final sizeBox = box.size;
-                      double px = sizeBox.width / 2;
-                      double py = sizeBox.height / 2;
+                      Offset position = box.localToGlobal(Offset.zero);
+                      double px = position.dx + 45;
+                      double py = position.dy;
                       print('*******************************');
                       print(px);
                       print(py);
@@ -82,6 +84,7 @@ class _CameraDetectState extends State<CameraDetect> {
                       //todo teste get Location
                       setState(() {
 //                        int pixel32 = img.getPixelSafe(214, 365); //set fix position
+//                        int pixel32 = imgGreyScale.getPixelSafe(px.toInt(), py.toInt());
                         int pixel32 = img.getPixelSafe(px.toInt(), py.toInt());
                         int hex = abgrToArgb(pixel32);
                         _stateController.add(Color(hex));
@@ -133,10 +136,9 @@ class _CameraDetectState extends State<CameraDetect> {
       return Container();
     }
     return Expanded(
-      key: key,
       flex: 1,
       child: Stack(
-        children: <Widget>[_cameraPreviewWidget(), _cameraScan()],
+        children: <Widget>[_cameraPreviewWidget(), point(), _cameraScan()],
       ),
     );
   }
@@ -152,13 +154,23 @@ class _CameraDetectState extends State<CameraDetect> {
     );
   }
 
+  Widget point() {
+    return Center(
+      child: Container(
+        key: key,
+        height: 45,
+        width: 0,
+      ),
+    );
+  }
+
   Widget _cameraScan() {
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      padding: EdgeInsets.symmetric(vertical: 150),
-      margin: EdgeInsets.only(bottom: 110),
-      child: Image.asset("assets/images/scan.png"),
+    return Center(
+      child: Container(
+        height: 150,
+        width: 150,
+        child: Image.asset("assets/images/scan.png"),
+      ),
     );
   }
 
@@ -189,6 +201,18 @@ class _CameraDetectState extends State<CameraDetect> {
       }
     }
     return imglib.copyRotate(imglib.copyCrop(buffer, 0, 0, image.width, image.height), 90);
+  }
+
+  //Convert the image to grayscale
+  imglib.Image grayscale(imglib.Image src) {
+    var p = src.getBytes();
+    for (var i = 0; i < p.length; i += 4) {
+      var l = imglib.getLuminanceRgb(p[i], p[i + 1], p[i + 2]);
+      p[i] = l;
+      p[i + 1] = l;
+      p[i + 2] = l;
+    }
+    return src;
   }
 }
 
